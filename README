@@ -1,0 +1,11 @@
+To do:
+1. Separate:
+    - conractions
+        - n't, 's, 've, 'm, 'll, 're, 'd, 'n, 'em
+    - parentheses
+    - punctuations
+    - (\d+\+)|(\w+\/\w+)|(\d+(?:a\.m\.|p\.m\.|am|pm|a\.m|p\.m))|((?:dr|mr|ms|mrs|st|etc|e\.g|i\.e|eg|ie|a\.m|p\.m)\.)|(\w+)(n't|'s|'ve|'m|'ll|'re|'d|'n|'em)|([a-zA-Z'\-]+)|([\Q.,?!'":;@#$%^&*()-=_+[]{}\/<>`~\E])|(\d+-?:?\/?\d+\w*)|(\#?\d+\w*\%?)|(\#\w+\d*)|(\$\d*)
+2. Remove:
+    - URLs
+    - ------* or =====*
+3. Sort by decreasing frequency.
