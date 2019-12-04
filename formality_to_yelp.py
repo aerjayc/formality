@@ -54,10 +54,41 @@ def formality_to_yelp(filename):
 			fv.write('\n')
 
 def main():
-	formality_to_yelp('answers')
-	formality_to_yelp('blog')
-	formality_to_yelp('email')
-	formality_to_yelp('news')
+	filenames = ['answers', 'blog', 'email', 'news']
+	#formality_to_yelp('answers')
+	#formality_to_yelp('blog')
+	#formality_to_yelp('email')
+	#formality_to_yelp('news')
+
+	with open('formality/modified/all.train.text', 'w') as fall:
+		pass
+	with open('formality/modified/all.train.labels', 'w') as fall:
+		pass
+
+	for filename in filenames:
+		with open(f'formality/modified/{filename}.train.text') as f:
+			part = f.read()
+		with open('formality/modified/all.train.text', 'a') as fall:
+			fall.write(part)
+
+		with open(f'formality/modified/{filename}.train.labels') as f:
+			part = f.read()
+		with open('formality/modified/all.train.labels', 'a') as fall:
+			fall.write(part)
+
+	with open(f'formality/modified/answers.train.vocab') as f:
+		vocab = set(f.readlines())
+	with open(f'formality/modified/blog.train.vocab') as f:
+		vocab = vocab | set(f.readlines())
+	with open(f'formality/modified/email.train.vocab') as f:
+		vocab = vocab | set(f.readlines())
+	with open(f'formality/modified/news.train.vocab') as f:
+		vocab = vocab | set(f.readlines())
+
+	with open('formality/modified/all.train.vocab', 'w') as fv:
+		for word in vocab:
+			fv.write(word)
+
 
 if __name__ == '__main__':
 	main()
