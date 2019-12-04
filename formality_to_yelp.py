@@ -4,12 +4,11 @@ def form_to_yelp(line, vocab):
 	form_list = re.split('\t', line)
 	
 	text = form_list[3]
+	if text[-1] == '\n':
+			text = text[:-1]
 	for word in re.split(' ', text):
-
-		if word[-1] == '\n':
-			word = word[:-1]
 		vocab.add(word)
-	
+
 	mean = form_list[0]
 	if float(mean) <= 0:
 		mean = '0'
@@ -20,7 +19,7 @@ def form_to_yelp(line, vocab):
 	return mean, text
 
 def main():
-	file = 'news'
+	file = 'answers'
 	path_to_formality = f'formality/{file}'
 	path_to_text = f'formality/modified/{file}.train.text'
 	path_to_labels = f'formality/modified/{file}.train.labels'
@@ -36,8 +35,8 @@ def main():
 		pass
 
 	#import formality text file
-	with open(path_to_formality) as ff:
-		line  = ff.readline()
+	with open(path_to_formality, 'rb') as ff:
+		line  = ff.readline().decode('latin-1')
 		while(line):
 			yelped_line = form_to_yelp(line, vocab)
 			print(line)
@@ -48,7 +47,7 @@ def main():
 			with open(path_to_text, 'a') as ft:
 				ft.write(yelped_line[1])
 
-			line  = ff.readline()
+			line = ff.readline().decode('latin-1')
 
 	with open(path_to_vocab, 'w') as fv:
 		for word in vocab:
