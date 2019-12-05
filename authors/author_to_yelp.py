@@ -4,12 +4,17 @@ from collections import Counter
 import operator
 import re
 from nltk import tokenize, word_tokenize
+from sklearn.model_selection import train_test_split
+
+TRAINSPLIT = 0.7
+TESTSPLIT = 0.2
 
 WORDLIM = 21
 CHARLIM = 15
 
 RAWDIR = 'raws/'
 DATADIR = 'datasetized/'
+SPLITDIR = 'datasetized/split/'
 
 a_fname = 'austen.txt'
 b_fname = 'twain.txt'
@@ -27,9 +32,14 @@ def main():
     a_labels_path = os.path.join(DATADIR, a_fname + '.labels')
     b_text_path = os.path.join(DATADIR, b_fname + '.text')
     b_labels_path = os.path.join(DATADIR, b_fname + '.labels')
+
     vocab_path = os.path.join(DATADIR, 'vocab')
     text_path = os.path.join(DATADIR, 'text')
     labels_path = os.path.join(DATADIR, 'labels')
+
+    train_path = os.path.join(SPLITDIR, 'train')
+    val_path = os.path.join(SPLITDIR, 'val')
+    test_path = os.path.join(SPLITDIR, 'test')
 
 
     # import corpora
@@ -56,24 +66,10 @@ def main():
 
 
     # write data to files
-    pathlib.Path(DATADIR).mkdir(parents=True, exist_ok=True)    # create dir if not exist
-    with open(a_text_path, 'w') as f:
-        for sentence in a_parsed_sentences:
-            try:
-                f.write(sentence + '\n')
-            except UnicodeEncodeError:
-                raise Exception(f"Weird character:\t{repr(sentence)}")
-    with open(a_labels_path, 'w') as f:
-        f.write('0\n'*len(a_parsed_sentences))
-
-    with open(b_text_path, 'w') as f:
-        for sentence in b_parsed_sentences:
-            try:
-                f.write(sentence + '\n')
-            except UnicodeEncodeError:
-                raise Exception(f"Weird character:\t{repr(sentence)}")
-    with open(b_labels_path, 'w') as f:
-        f.write('1\n'*len(b_parsed_sentences))
+    
+    # create dirs if not exist
+    pathlib.Path(DATADIR).mkdir(parents=True, exist_ok=True)
+    pathlib.Path(SPLITDIR).mkdir(parents=True, exist_ok=True)
 
     vocab = a_vocab + b_vocab
     sorted_vocab = sorted(vocab.items(), key=operator.itemgetter(1), reverse=True)
@@ -82,21 +78,61 @@ def main():
         for word,_ in sorted_vocab:
             f.write(word + '\n')
 
+    # with open(a_text_path, 'w') as f:
+    #     for sentence in a_parsed_sentences:
+    #         try:
+    #             f.write(sentence + '\n')
+    #         except UnicodeEncodeError:
+    #             raise Exception(f"Weird character:\t{repr(sentence)}")
+    # with open(a_labels_path, 'w') as f:
+    #     f.write('0\n'*len(a_parsed_sentences))
 
-    with open(text_path, 'w') as f:
-        with open(a_text_path) as fa:
-            a_text = fa.read()
-        with open(b_text_path) as fb:
-            b_text = fb.read()
-        f.write(a_text + b_text)
+    # with open(b_text_path, 'w') as f:
+    #     for sentence in b_parsed_sentences:
+    #         try:
+    #             f.write(sentence + '\n')
+    #         except UnicodeEncodeError:
+    #             raise Exception(f"Weird character:\t{repr(sentence)}")
+    # with open(b_labels_path, 'w') as f:
+    #     f.write('1\n'*len(b_parsed_sentences))
 
-    with open(labels_path, 'w') as f:
-        with open(a_labels_path) as fa:
-            a_labels = fa.read()
-        with open(b_labels_path) as fb:
-            b_labels = fb.read()
-        f.write(a_labels + b_labels)
 
+    # with open(text_path, 'w') as f:
+    #     with open(a_text_path) as fa:
+    #         a_text = fa.read()
+    #     with open(b_text_path) as fb:
+    #         b_text = fb.read()
+    #     f.write(a_text + b_text)
+
+    # with open(labels_path, 'w') as f:
+    #     with open(a_labels_path) as fa:
+    #         a_labels = fa.read()
+    #     with open(b_labels_path) as fb:
+    #         b_labels = fb.read()
+    #     f.write(a_labels + b_labels)
+
+    (x_train, y_train), (x_val, y_val), (x_test, y_test) = train_val_test_split(a_parsed_sentences, b_parsed_sentences)
+    
+    with open(train_path + '.text', 'w') as f:
+        for x in x_train:
+            f.write(x + '\n')
+    with open(train_path + '.labels', 'w') as f:
+        for y in y_train:
+            f.write(str(y) + '\n')
+
+    with open(val_path + '.text', 'w') as f:
+        for x in x_val:
+            f.write(x + '\n')
+    with open(val_path + '.labels', 'w') as f:
+        for y in y_val:
+            f.write(str(y) + '\n')
+
+    with open(test_path + '.text', 'w') as f:
+        for x in x_test:
+            f.write(x + '\n')
+    with open(test_path + '.labels', 'w') as f:
+        for y in y_test:
+            f.write(str(y) + '\n')
 
 def preprocess(raw):
     """ make everything lowercase
@@ -197,6 +233,19 @@ def parse_sentences(sentences):
             parsed_sentences.append(parsed_sentence)
 
     return parsed_sentences, vocab
+
+def train_val_test_split(a_text, b_text):
+    a_labels = [0]*len(a_text)
+    b_labels = [1]*len(b_text)
+
+    x = a_text + b_text
+    y = a_labels + b_labels
+
+    x_train, x_temp, y_train, y_temp = train_test_split(x, y, train_size=TRAINSPLIT)
+    x_val, x_test, y_val, y_test = train_test_split(x_temp, y_temp, test_size=TESTSPLIT)
+
+    return (x_train, y_train), (x_val, y_val), (x_test, y_test)
+
 
 if __name__ == '__main__':
     main()
