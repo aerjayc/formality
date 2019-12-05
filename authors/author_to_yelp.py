@@ -57,13 +57,21 @@ def main():
     pathlib.Path(DATADIR).mkdir(parents=True, exist_ok=True)    # create dir if not exist
     with open(a_text_path, 'w') as f:
         for sentence in a_parsed_sentences:
-            f.write(sentence + '\n')
+            try:
+                f.write(sentence + '\n')
+            except UnicodeEncodeError:
+                raise Exception(f"Weird character:\t{repr(sentence)}")
+    with open(a_labels_path, 'w') as f:
+        f.write('0\n'*len(a_parsed_sentences))
+
     with open(b_text_path, 'w') as f:
         for sentence in b_parsed_sentences:
             try:
                 f.write(sentence + '\n')
             except UnicodeEncodeError:
                 raise Exception(f"Weird character:\t{repr(sentence)}")
+    with open(b_labels_path, 'w') as f:
+        f.write('1\n'*len(b_parsed_sentences))
 
     vocab = a_vocab + b_vocab
     sorted_vocab = sorted(vocab.items(), key=operator.itemgetter(1), reverse=True)
