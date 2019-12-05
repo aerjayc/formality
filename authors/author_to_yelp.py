@@ -53,6 +53,7 @@ def main():
     b_parsed_sentences, b_vocab = parse_sentences(b_sentences)
 
 
+    # write data to files
     pathlib.Path(DATADIR).mkdir(parents=True, exist_ok=True)    # create dir if not exist
     with open(a_text_path, 'w') as f:
         for sentence in a_parsed_sentences:
@@ -76,11 +77,14 @@ def main():
 def preprocess(raw):
     """ make everything lowercase
         convert CRLF to LF
-        replace ';' with '.'
+        replace {';', '--'} with '.'
+        remove underscores
     """
     raw = raw.lower()
     raw = raw.replace('\r\n', '\n')
     raw = raw.replace(';', '.')
+    raw = raw.replace('--', '. ')
+    raw = raw.replace('_', '')
 
     return raw
 
@@ -110,23 +114,37 @@ def extract_sentences(paragraph):
 def extract_words(sentence):
     words = word_tokenize(sentence)
 
-    breakpoint = None
+    split_wordsets = break_wordset(words)
+
+    return split_wordsets
+
+def break_wordset(words):
+    """ recursively breaks down words using
+        half_wordset(), which uses commas as breakpoints
+    """
+
     if len(words) > WORDLIM:
-        # break at the middle (appropriate) punctuation
-        # if none, break at middle
         if ',' in words:
-            comma_indices = [i for i,word in enumerate(words) if word==',']
-            middle = len(comma_indices)/2
-            # argmin_i(middle - i)
-            breakpoint = min(comma_indices, key=lambda x:abs(x-middle))
-            words[breakpoint] = '.'
-
-    if breakpoint:
-        words = [words[:breakpoint+1], words[breakpoint+1:]]
+            w1, w2 = half_wordset(words)
+            return break_wordset(w1) + break_wordset(w2)
+        else:
+            breakpoint = len(words) >> 1
+            return [words[:breakpoint], words[breakpoint:]]
     else:
-        words = [words]
+        return [words]
 
-    return words
+def half_wordset(words):
+    # break at the middle (appropriate) punctuation
+    # if none, break at middle
+    comma_indices = [i for i,word in enumerate(words) if word==',']
+    middle = len(comma_indices)/2
+    
+    # argmin_i(middle - i)
+    breakpoint = min(comma_indices, key=lambda x:abs(x-middle))
+    
+    words[breakpoint] = '.'
+
+    return [words[:breakpoint+1], words[breakpoint+1:]]
 
 def parse_sentences(sentences):
     """ returns:
@@ -153,9 +171,6 @@ def parse_sentences(sentences):
             
             #print(parsed_sentence)
             parsed_sentences.append(parsed_sentence)
-    
-    # sort the vocabulary by frequency
-    # vocab = sorted(vocab.items(), key=operator.itemgetter(1), reverse=True)
 
     return parsed_sentences, vocab
 
