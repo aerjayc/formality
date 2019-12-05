@@ -28,6 +28,8 @@ def main():
     b_text_path = os.path.join(DATADIR, b_fname + '.text')
     b_labels_path = os.path.join(DATADIR, b_fname + '.labels')
     vocab_path = os.path.join(DATADIR, 'vocab')
+    text_path = os.path.join(DATADIR, 'text')
+    labels_path = os.path.join(DATADIR, 'labels')
 
 
     # import corpora
@@ -80,6 +82,20 @@ def main():
         for word,_ in sorted_vocab:
             f.write(word + '\n')
 
+
+    with open(text_path, 'w') as f:
+        with open(a_text_path) as fa:
+            a_text = fa.read()
+        with open(b_text_path) as fb:
+            b_text = fb.read()
+        f.write(a_text + b_text)
+
+    with open(labels_path, 'w') as f:
+        with open(a_labels_path) as fa:
+            a_labels = fa.read()
+        with open(b_labels_path) as fb:
+            b_labels = fb.read()
+        f.write(a_labels + b_labels)
 
 
 def preprocess(raw):
