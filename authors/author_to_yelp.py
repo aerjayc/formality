@@ -5,6 +5,9 @@ import operator
 import re
 from nltk import tokenize, word_tokenize
 
+WORDLIM = 21
+CHARLIM = 15
+
 RAWDIR = 'raws/'
 DATADIR = 'datasetized/'
 
@@ -12,12 +15,6 @@ a_fname = 'austen.txt'
 b_fname = 'twain.txt'
 A_ENCODING = 'utf-8'
 B_ENCODING = 'latin-1'
-
-""" Notes:
-        - twain.txt uses a weird unicode character not recognized by our parser,
-            so we replaced it all with double quotes '"'
-        - chapter/preface/etc. indicators removed on both texts
-"""
 
 
 
@@ -56,6 +53,7 @@ def main():
     b_parsed_sentences, b_vocab = parse_sentences(b_sentences)
 
 
+    # write data to files
     pathlib.Path(DATADIR).mkdir(parents=True, exist_ok=True)    # create dir if not exist
     with open(a_text_path, 'w') as f:
         for sentence in a_parsed_sentences:
@@ -79,10 +77,14 @@ def main():
 def preprocess(raw):
     """ make everything lowercase
         convert CRLF to LF
-        #remove single-word paragraphs
+        replace {';', '--'} with '.'
+        remove underscores
     """
     raw = raw.lower()
-    raw.replace('\r\n', '\n')
+    raw = raw.replace('\r\n', '\n')
+    raw = raw.replace(';', '.')
+    raw = raw.replace('--', '. ')
+    raw = raw.replace('_', '')
 
     return raw
 
@@ -102,7 +104,7 @@ def extract_sentences(paragraph):
             <sentence>. "<sentence>?"
     """
     # replace newlines with spaces (within paragraphs)
-    paragraph.replace('\n', ' ')
+    # paragraph.replace('\n', ' ')
 
     # extract sentences
     sentences = tokenize.sent_tokenize(paragraph)
@@ -110,7 +112,39 @@ def extract_sentences(paragraph):
     return sentences
 
 def extract_words(sentence):
-    return word_tokenize(sentence)
+    words = word_tokenize(sentence)
+
+    split_wordsets = break_wordset(words)
+
+    return split_wordsets
+
+def break_wordset(words):
+    """ recursively breaks down words using
+        half_wordset(), which uses commas as breakpoints
+    """
+
+    if len(words) > WORDLIM:
+        if ',' in words:
+            w1, w2 = half_wordset(words)
+            return break_wordset(w1) + break_wordset(w2)
+        else:
+            breakpoint = len(words) >> 1
+            return [words[:breakpoint], words[breakpoint:]]
+    else:
+        return [words]
+
+def half_wordset(words):
+    # break at the middle (appropriate) punctuation
+    # if none, break at middle
+    comma_indices = [i for i,word in enumerate(words) if word==',']
+    middle = len(comma_indices)/2
+    
+    # argmin_i(middle - i)
+    breakpoint = min(comma_indices, key=lambda x:abs(x-middle))
+    
+    words[breakpoint] = '.'
+
+    return [words[:breakpoint+1], words[breakpoint+1:]]
 
 def parse_sentences(sentences):
     """ returns:
@@ -120,25 +154,23 @@ def parse_sentences(sentences):
     parsed_sentences = []
     vocab = Counter()
     for sentence in sentences:
-        words = extract_words(sentence)
+        wordss = extract_words(sentence)
 
-        parsed_sentence = ''
-        for i, word in enumerate(words):
-            if i == 0:
-                parsed_sentence += word
-            else:
-                parsed_sentence += ' ' + word   # separate words by spaces
-        
-            if word in vocab:
-                vocab[word] += 1                # count word frequency
-            else:
-                vocab[word] = 1
-        
-        #print(parsed_sentence)
-        parsed_sentences.append(parsed_sentence)
-    
-    # sort the vocabulary by frequency
-    # vocab = sorted(vocab.items(), key=operator.itemgetter(1), reverse=True)
+        for words in wordss:
+            parsed_sentence = ''
+            for i, word in enumerate(words):
+                if i == 0:
+                    parsed_sentence += word
+                else:
+                    parsed_sentence += ' ' + word   # separate words by spaces
+            
+                if word in vocab:
+                    vocab[word] += 1                # count word frequency
+                else:
+                    vocab[word] = 1
+            
+            #print(parsed_sentence)
+            parsed_sentences.append(parsed_sentence)
 
     return parsed_sentences, vocab
 
