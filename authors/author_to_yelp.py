@@ -13,16 +13,19 @@ b_fname = 'twain.txt'
 A_ENCODING = 'utf-8'
 B_ENCODING = 'latin-1'
 
-# Note:
-#     twain.txt uses a weird unicode character not recognized by our parser,
-#     so we replaced it all with double quotes '"'
+""" Notes:
+        - twain.txt uses a weird unicode character not recognized by our parser,
+            so we replaced it all with double quotes '"'
+        - chapter/preface/etc. indicators removed on both texts
+"""
+
 
 
 def main():
     # paths to author corpora
     a_path = os.path.join(RAWDIR, a_fname)
     b_path = os.path.join(RAWDIR, b_fname)
-    #paths to datasetized corpora
+    # paths to datasetized corpora
     a_text_path = os.path.join(DATADIR, a_fname + '.text')
     a_labels_path = os.path.join(DATADIR, a_fname + '.labels')
     b_text_path = os.path.join(DATADIR, b_fname + '.text')
