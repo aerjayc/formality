@@ -5,6 +5,9 @@ import operator
 import re
 from nltk import tokenize, word_tokenize
 
+WORDLIM = 21
+CHARLIM = 15
+
 RAWDIR = 'raws/'
 DATADIR = 'datasetized/'
 
@@ -12,12 +15,6 @@ a_fname = 'austen.txt'
 b_fname = 'twain.txt'
 A_ENCODING = 'utf-8'
 B_ENCODING = 'latin-1'
-
-""" Notes:
-        - twain.txt uses a weird unicode character not recognized by our parser,
-            so we replaced it all with double quotes '"'
-        - chapter/preface/etc. indicators removed on both texts
-"""
 
 
 
@@ -79,10 +76,11 @@ def main():
 def preprocess(raw):
     """ make everything lowercase
         convert CRLF to LF
-        #remove single-word paragraphs
+        replace ';' with '.'
     """
     raw = raw.lower()
-    raw.replace('\r\n', '\n')
+    raw = raw.replace('\r\n', '\n')
+    raw = raw.replace(';', '.')
 
     return raw
 
@@ -102,7 +100,7 @@ def extract_sentences(paragraph):
             <sentence>. "<sentence>?"
     """
     # replace newlines with spaces (within paragraphs)
-    paragraph.replace('\n', ' ')
+    # paragraph.replace('\n', ' ')
 
     # extract sentences
     sentences = tokenize.sent_tokenize(paragraph)
@@ -110,7 +108,25 @@ def extract_sentences(paragraph):
     return sentences
 
 def extract_words(sentence):
-    return word_tokenize(sentence)
+    words = word_tokenize(sentence)
+
+    breakpoint = None
+    if len(words) > WORDLIM:
+        # break at the middle (appropriate) punctuation
+        # if none, break at middle
+        if ',' in words:
+            comma_indices = [i for i,word in enumerate(words) if word==',']
+            middle = len(comma_indices)/2
+            # argmin_i(middle - i)
+            breakpoint = min(comma_indices, key=lambda x:abs(x-middle))
+            words[breakpoint] = '.'
+
+    if breakpoint:
+        words = [words[:breakpoint+1], words[breakpoint+1:]]
+    else:
+        words = [words]
+
+    return words
 
 def parse_sentences(sentences):
     """ returns:
@@ -120,22 +136,23 @@ def parse_sentences(sentences):
     parsed_sentences = []
     vocab = Counter()
     for sentence in sentences:
-        words = extract_words(sentence)
+        wordss = extract_words(sentence)
 
-        parsed_sentence = ''
-        for i, word in enumerate(words):
-            if i == 0:
-                parsed_sentence += word
-            else:
-                parsed_sentence += ' ' + word   # separate words by spaces
-        
-            if word in vocab:
-                vocab[word] += 1                # count word frequency
-            else:
-                vocab[word] = 1
-        
-        #print(parsed_sentence)
-        parsed_sentences.append(parsed_sentence)
+        for words in wordss:
+            parsed_sentence = ''
+            for i, word in enumerate(words):
+                if i == 0:
+                    parsed_sentence += word
+                else:
+                    parsed_sentence += ' ' + word   # separate words by spaces
+            
+                if word in vocab:
+                    vocab[word] += 1                # count word frequency
+                else:
+                    vocab[word] = 1
+            
+            #print(parsed_sentence)
+            parsed_sentences.append(parsed_sentence)
     
     # sort the vocabulary by frequency
     # vocab = sorted(vocab.items(), key=operator.itemgetter(1), reverse=True)
